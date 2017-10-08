@@ -15,11 +15,10 @@
 #include <stdio.h>
 
 int _g = 4; 
-#define g (_g)
-
 extern int _asm_min(int i, int j, int k);
 extern int _asm_p(int i, int j, int k, int l);
 extern int _asm_gcd(int a, int b);
+#define g (_g)
 #define min (_asm_min)
 #define p (_asm_p)
 #define gcd (_asm_gcd)
@@ -37,6 +36,7 @@ int testGcd();
 // ---- quickly check asm is working ----
 void quickTest();
 
+// ---- main body ---- 
 int main (){
 
     // run test cases
@@ -63,8 +63,9 @@ void quickTest(){
     int gcdv = gcd(49, 21);
     printf("gcd(49, 21): %d\n", gcdv);
 }
-
+
 // ---- C implementations for testing ----
+// ---- min ----
 int cMin (int a, int b, int c){
     int v = a;
     if (b < v){
@@ -75,11 +76,11 @@ int cMin (int a, int b, int c){
     }
     return v;
 }
-
+// ---- p ----
 int cP (int i, int j, int k, int l){
     return cMin(cMin(g, i, j), k, l);
 }
-
+// ---- gcd ----
 int cGcd (int a, int b){
     if (b == 0){
         return a;
@@ -87,71 +88,77 @@ int cGcd (int a, int b){
         return cGcd(b, a % b);
     }
 }
-
-// ---- Testing Functions ----
-
+
+// ---- Testing min ----
 int testMin(){
     printf(" ----- Testing Min ----- \n");
     int testFailed = 0;
     int numTests = 13;
     int tests[13][3]={
-        /*simple*/  { 1,2,3 },    { 3,2,1 },    { 2,1,3 },
-        /*adv*/     { 12,13,14 },{ 14,13,12 },{ 12,12,13 },
-        /*neg*/     { -1,-2,-3 },{ -3,-2,-1 },{ -2,-1,-3 },
-        /*adv neg*/ { -2,3,4 },  { 2,-2,3 },  { 2,3,-2 },
-        /*special*/ { 0,0,0 },};
+    /*simple*/  {  1,  2,  3 }, {  3,  2,  1 }, {  2,  1,  3 },
+    /*adv*/     { 12, 13, 14 }, { 14, 13, 12 }, { 12, 12, 13 },
+    /*neg*/     { -1, -2, -3 }, { -3, -2, -1 }, { -2, -1, -3 },
+    /*adv neg*/ { -2,  3,  4 }, {  2, -2,  3 }, {  2,  3, -2 },
+    /*special*/ {  0,  0,  0 }};
 
     for (int i=0; i<numTests; i++){
-        if (         min(tests[i][0], tests[i][1], tests[i][2]) !=  
-                    cMin(tests[i][0], tests[i][1], tests[i][2]) ){
-            printf("failed: min(%d, %d, %d)\n", tests[i][0], tests[i][1], tests[i][2]);
+        if (     min(tests[i][0], tests[i][1], tests[i][2]) !=  
+                cMin(tests[i][0], tests[i][1], tests[i][2]) ){
+            printf("failed: min(%d, %d, %d)\n", 
+                    tests[i][0], tests[i][1], tests[i][2]);
             testFailed++;
         }else{
-            printf("passed: min(%d, %d, %d)\n", tests[i][0], tests[i][1], tests[i][2]);
+            printf("passed: min(%d, %d, %d)\n", 
+                    tests[i][0], tests[i][1], tests[i][2]);
         }
     }
     return testFailed; 
 }
-
+
+// ---- Testing p ----
 int testP(){
     printf(" ----- Testing P ( g = %d ) ----- \n", g);
     int testFailed = 0;
     int numTests = 13;
     int tests[13][4]={
-        /*simple*/  { 1,2,3,4 },      { 4,3,2,1 },      { 2,1,4,3 },
-        /*adv*/     { 12,15,13,14 }, { 14,13,15,12 }, { 12,15,9,13 },
-        /*neg*/     { -1,-2,-3,-4 }, { -3,-2,-1,-4 }, { -2,-1,-3,-4 },
-        /*adv neg*/ { -2,3,4,5 },    { 2,-2,3,5 },    { 2,3,-2,5 },
-        /*special*/ { 0,0,0,0 }};
+    /*simple*/  {  1,  2,  3,  4 }, {  4,  3,  2,  1 }, {  2,  1,  4,  3 },
+    /*adv*/     { 12, 15, 13, 14 }, { 14, 13, 15, 12 }, { 12, 15,  9, 13 },
+    /*neg*/     { -1, -2, -3, -4 }, { -3, -2, -1, -4 }, { -2, -1, -3, -4 },
+    /*adv neg*/ { -2,  3,  4,  5 }, {  2, -2,  3,  5 }, {  2,  3, -2,  5 },
+    /*special*/ {  0,  0,  0,  0 }};
 
     for (int i=0; i<numTests; i++){
-        if (         p(tests[i][0], tests[i][1], tests[i][2], tests[i][3]) !=
-                    cP(tests[i][0], tests[i][1], tests[i][2], tests[i][3]) ){
-            printf("failed: p(%d, %d, %d, %d)\n", tests[i][0], tests[i][1], tests[i][2], tests[i][3] );
+        if (     p(tests[i][0], tests[i][1], tests[i][2], tests[i][3]) !=
+                cP(tests[i][0], tests[i][1], tests[i][2], tests[i][3]) ){
+            printf("failed: p(%d, %d, %d, %d)\n", 
+                    tests[i][0], tests[i][1], tests[i][2], tests[i][3] );
             testFailed++;
         }else{
-            printf("passed: p(%d, %d, %d, %d)\n", tests[i][0], tests[i][1], tests[i][2], tests[i][3] );
+            printf("passed: p(%d, %d, %d, %d)\n", 
+                    tests[i][0], tests[i][1], tests[i][2], tests[i][3] );
         }
     }
     return testFailed;
 }
-
+
+// ---- Testing gcd ----
 int testGcd(){
     printf(" ----- Testing Gcd ----- \n");
     int testFailed = 0;
     int numTests = 7;
     int tests[7][2]={
-        /*simple*/      { 21, 14 },   {1406700, 164115 },   { 12, 6 },
-        /*neg*/         { 21, -14 },  { -21,-14 },
-        /*special*/     { 0,0 },      { 3,5 } };
+    /*simple*/      { 21,  14 },   { 1406700, 164115 }, { 12, 6 },
+    /*neg/special*/ { 21, -14 },   {     -21,    -14 }, {  0, 0 }};
 
     for (int i=0; i<numTests; i++){
-        if (         gcd(tests[i][0], tests[i][1]) !=
-                    cGcd(tests[i][0], tests[i][1]) ){
-            printf("failed: min(%d, %d)\n", tests[i][0], tests[i][1]);
+        if (     gcd(tests[i][0], tests[i][1]) !=
+                cGcd(tests[i][0], tests[i][1]) ){
+            printf("failed: min(%d, %d)\n", 
+                    tests[i][0], tests[i][1]);
             testFailed++;
         }else{
-            printf("passed: min(%d, %d)\n", tests[i][0], tests[i][1]);
+            printf("passed: min(%d, %d)\n", 
+                    tests[i][0], tests[i][1]);
         }
     }
     return testFailed;
