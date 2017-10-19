@@ -14,40 +14,46 @@
 
 #include <stdio.h>
 #include <stdint.h>
-// #define INT64 int64_t c
 int64_t _g = 4; 
 extern int64_t _asm_min(int64_t i, int64_t j, int64_t k) __attribute__ ((ms_abi));
 extern int64_t _asm_p(int64_t i, int64_t j, int64_t k, int64_t l) __attribute__ ((ms_abi));
 extern int64_t _asm_gcd(int64_t a, int64_t b) __attribute__ ((ms_abi));
+extern int64_t _asm_q(int64_t a, int64_t b, int64_t c, int64_t d, int64_t e) __attribute__ ((ms_abi));
 #define g (_g)
 #define min (_asm_min)
 #define p (_asm_p)
 #define gcd (_asm_gcd)
+#define q (_asm_q)
 
 // ---- c implementation of functions to test against ----
 int64_t cMin(int64_t a, int64_t b, int64_t c);
 int64_t cP(int64_t i, int64_t j, int64_t k, int64_t l);
 int64_t cGcd(int64_t a, int64_t b);
+int64_t cQ(int64_t a, int64_t b, int64_t c, int64_t d, int64_t e);
 
 // ---- testing functiosn which compare c vs asm implementations against testcases and return number of fails ----
 int64_t testMin();
 int64_t testP();
 int64_t testGcd();
+int64_t testQ();
 
 // ---- quickly check asm is working ----
 void quickTest();
 
 // ---- main body ---- 
 int main (){
-
+    
+    int64_t var = q(1,2,3,4,5);
+    printf("var: %lld\n", var);
+    
     // run test cases
     int64_t minFails = testMin();
     int64_t pFails = testP();
     int64_t gcdFails = testGcd();
-    
+    int64_t qFails = testQ(); 
     // print results
     printf(" ----- Total Failed ----- \n");
-    printf("min:  %lld\np:    %lld\ngcd:  %lld\n", minFails, pFails, gcdFails);
+    printf("min:  %lld\np:    %lld\ngcd:  %lld\nq:  %lld\n", minFails, pFails, gcdFails, qFails);
 
 //     quickTest();
 
@@ -63,6 +69,8 @@ void quickTest(){
     printf("p(11, 12, 13, 14) (g=4): %lld\n", pv);
     int64_t gcdv = gcd(49, 21);
     printf("gcd(49, 21): %lld\n", gcdv);
+    int64_t qv = q(1,2,3,4,5);
+    printf("q(1,2,3,4,5): %lld\n", qv);
 }
 
 // ---- C implementations for testing ----
@@ -89,7 +97,7 @@ int64_t cGcd (int64_t a, int64_t b){
         return cGcd(b, a % b);
     }
 }
-int64_t cq(int64_t a, int64_t b, int64_t c, int64_t d, int64_t e){
+int64_t cQ(int64_t a, int64_t b, int64_t c, int64_t d, int64_t e){
     int64_t sum = a + b + c + d + e;
     printf("a = %lld b = %lld c = %lld d = %lld e = %lld sum = %lld\n", a, b, c, d, e, sum);
     return sum;
@@ -164,15 +172,43 @@ int64_t testGcd(){
         int64_t a = gcd(tests[i][0], tests[i][1]);
         int64_t c = cGcd(tests[i][0], tests[i][1]); 
         if ( a != c ){
-            printf("failed: min(%lld, %lld)\n", 
+            printf("failed: gcd(%lld, %lld)\n", 
                     tests[i][0], tests[i][1]);
             printf("a: (%lld) c:(%lld)\n", a, c);
             testFailed++;
         }else{
-            printf("passed: min(%lld, %lld)\n", 
+            printf("passed: gcd(%lld, %lld)\n", 
                     tests[i][0], tests[i][1]);
         }
     }
     return testFailed;
 }
+
+// ---- Testing gcd ----
+int64_t testQ(){
+    printf(" ----- Testing Q ----- \n");
+    int64_t testFailed = 0;
+    int64_t numTests = 3;
+    int64_t tests[3][5]={
+                    { 1, 2, 3, 4, 5 },   { -1, 2, -3, 4, -5 }, \
+                    { 0, 0, 0, 0, 0 }};
 
+    for (int64_t i=0; i<numTests; i++){
+        int64_t a = q(tests[i][0], tests[i][1], tests[i][2], \
+            tests[i][3], tests[i][4]);
+        int64_t c = cQ(tests[i][0], tests[i][1], tests[i][2], \
+            tests[i][3], tests[i][4]);
+        if ( a != c ){
+            printf("failed: q(%lld, %lld, %lld, %lld, %lld)\n", 
+                    tests[i][0], tests[i][1], tests[i][2], \
+                    tests[i][3], tests[i][4]);
+            printf("a: (%lld) c:(%lld)\n", a, c);
+            testFailed++;
+        }else{
+            printf("passed: q(%lld, %lld, %lld, %lld, %lld)\n", 
+                    tests[i][0], tests[i][1], tests[i][2], \
+                    tests[i][3], tests[i][4]);
+        }
+    }
+    return testFailed;
+}
