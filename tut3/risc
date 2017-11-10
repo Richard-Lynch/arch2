@@ -1,0 +1,6 @@
+passed  26-31
+local   16-25
+called  10-15
+global  1-9
+zero    0
+return  25
