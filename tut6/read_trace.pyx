@@ -13,28 +13,6 @@ import profile
 import re
 
 
-def timing(f):
-    def wrap(*args):
-        time1 = time.time()
-        ret = f(*args)
-        time2 = time.time()
-        print('%s function took %0.3f ms' % (f.__name__,
-                                             (time2 - time1) * 1000.0))
-        return ret
-
-    return wrap
-
-
-mdw_encoding = {
-    '000': 'Interrupt Acknowledge',
-    '001': 'halt/special cycle',
-    '010': 'I/O read',
-    '011': 'I/O write',
-    '100': 'Instruction Read',
-    '101': 'Reserved',
-    '110': 'data read',
-    '111': 'data write',
-}
 
 
 def readlines_bytes(filename, lines, **kwargs):
@@ -50,113 +28,9 @@ def readlines_bytes(filename, lines, **kwargs):
     return lines
 
 
-# def readlines_string(filename, lines, **kwargs):
-#     if lines is None:
-#         args = ["xxd", "-g", "4", "-c", "4", "-b", filename]
-#     else:
-#         args = ["xxd", "-g", "4", "-c", "4", "-b", "-l", str(lines), filename]
-
-#     data = subprocess.run(
-#         args=args, stdout=subprocess.PIPE).stdout.decode().split('\n')[0:-1:2]
-
-#     lines = [int(r.split(' ')[1], 2) for r in data]
-#     return lines
-
-
-def next_address_in_burst(pair):
-    global masks
-    print('address')
-    address = pair[0] & masks['address'][1]
-    print(address)
-    print(bin(address))
-    # burst =
-    print('next address')
-    next_address = (address & 15) | ((address + 1) & 15)
-    print(next_address)
-    print(bin(next_address))
-
-    print('SHIFT')
-    print('address')
-    address = pair[0] & masks['address'][1]
-    address = address << 2
-    print(address)
-    print(bin(address))
-    # burst =
-    print('next address')
-    next_address = (address & 15) | ((address + 1) & 15)
-    print(next_address)
-    print(bin(next_address))
-
-
-class cach_tag_set(object):
-    """a set from the tag table"""
-
-    def __init__(self, L, K, N):
-        self._K = K
-        self._L = L
-        self._N = N
-        # self.dirs = {
-        #     -1 - i: {
-        #         'last': -1 - i,
-        #         'dir': i
-        #     }
-        #     for i in range(self._K)
-        # }
-        self.dirs = {-1 - i: -1 - i for i in range(self._K)}
-        # self.dirs = [-1 - i for i in range(self._K)]
-        self.newest = 1
-
-    def find_oldest(self):
-        min_last = self.newest
-        min_tag = None
-        for tag, entry in self.dirs.items():
-            if entry['last'] < min_last:
-                min_last = entry['last']
-                min_tag = tag
-
-        return min_last, min_tag
-
-    def add_item(self, new_tag):
-        # chose oldest
-        min_last, min_tag = self.find_oldest()
-        old = self.dirs.pop(min_tag)
-        self.dirs[new_tag] = {**old, **{'last': self.newest}}
-        self.newest += 1
-        return old['dir']
-
-    def get_item(self, tag):
-        try:
-            self.dirs[tag] = self.newest
-            # self.dirs[tag]['last'] = self.newest
-            self.newest += 1
-            # print('cache hit')
-            return True  # , self.dirs[tag]['dir']
-        except KeyError as e:
-            # print('cache miss')
-            # find_oldest
-            min_last = self.newest
-            min_tag = None
-            for t, entry in self.dirs.items():
-                if entry < min_last:
-                    min_last = entry
-                    min_tag = t
-            # add_item
-            self.dirs.pop(min_tag)
-            # old = self.dirs.pop(min_tag)
-            self.dirs[tag] = self.newest
-            # self.dirs[tag] = {**old, **{'last': self.newest}}
-            self.newest += 1
-            # self.add_item(tag)
-            return False  # , self.add_item(tag)
-
-
-def bprint(num):
-    print(num)
-    print("{0:032b}".format(num))
-
 
 class lnk_cache(object):
-    def __init__(self, L, K, N):
+    def __init__(self, int L, int K, int N):
         self._L = L
         self._K = K
         self._N = N
@@ -164,18 +38,6 @@ class lnk_cache(object):
         self._L_bits = int(math.log(L, 2))
         self._K_bits = int(math.log(K, 2))
         self._N_bits = int(math.log(N, 2))
-
-        # print('L')
-        # print(self._L)
-        # print(self._L_bits)
-
-        # print('K')
-        # print(self._K)
-        # print(self._K_bits)
-
-        # print('N')
-        # print(self._N)
-        # print(self._N_bits)
 
         self.make_masks()
 
@@ -203,7 +65,20 @@ class lnk_cache(object):
         hit, dir_num = _set.get_item(tag)
         return hit
 
-    def access(self, word0, tag_mask_int, set_mask_int):
+    def access(self, long word0, int tag_mask_int, int set_mask_int):
+        cdef:
+            long address
+            int _set
+            int _tag
+            # int set_mask_int
+            # int tag_mask_int
+            # int burst_mask
+            int newest
+            int min_last
+            int t
+            int entry
+            int min_tag
+
         address = word0 & address_mask
         _set = address & set_mask_int >> 16
         # _set = address & set_mask_int >> self._L_bits
@@ -273,8 +148,14 @@ def setup_cache():
     return result, ci, cd, masks
 
 
-def test_cache(result, ci, cd, masks):
-
+def test_cache(list result, ci, cd, masks):
+    cdef:
+        int hits
+        int misses
+        int skipped
+        int i
+        long r
+        int mdw
     hits = 0
     misses = 0
     skipped = 0
@@ -333,6 +214,16 @@ if __name__ == "__main__":
 
     # test_cache()
     # time cache
+    # cdef:
+    #     list result
+    #     int address_mask
+    #     int burst_mask
+    #     int mdw_mask
+    #     int ci_tag_mask
+    #     int ci_set_mask
+    #     int cd_tag_mask
+    #     int cd_set_mask
+    #     float t
     result, ci, cd, masks = setup_cache()
     address_mask = masks['address'][1]
     burst_mask = masks['burst'][1]
